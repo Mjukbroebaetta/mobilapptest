@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geoposisjon</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #resultat {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Vis geoposisjon</h1>
+
+    <button onclick="hentPosisjon()">Geoposisjon</button>
+
+    <div id="resultat">Trykk på knappen for å hente posisjonen.</div>
+
+    <script>
+        function hentPosisjon() {
+            const resultat = document.getElementById("resultat");
+
+            if (!navigator.geolocation) {
+                resultat.innerHTML = "Geolokasjon støttes ikke av nettleseren.";
+                return;
+            }
+
+            resultat.innerHTML = "Henter posisjon...";
+
+            navigator.geolocation.getCurrentPosition(
+                function(posisjon) {
+                    const breddegrad = posisjon.coords.latitude;
+                    const lengdegrad = posisjon.coords.longitude;
+                    const nøyaktighet = posisjon.coords.accuracy;
+
+                    resultat.innerHTML = `
+                        <p><strong>Breddegrad:</strong> ${breddegrad}</p>
+                        <p><strong>Lengdegrad:</strong> ${lengdegrad}</p>
+                        <p><strong>Nøyaktighet:</strong> ${nøyaktighet.toFixed(0)} meter</p>
+                    `;
+                },
+                function(feil) {
+                    resultat.innerHTML = "Kunne ikke hente posisjon: " + feil.message;
+                }
+            );
+        }
+    </script>
+
+</body>
+</html>
