@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geoposisjon</title>
+    <title>Geoposisjon og Vibrasjon</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,6 +15,7 @@
             padding: 12px 24px;
             font-size: 18px;
             cursor: pointer;
+            margin: 10px;
         }
 
         #resultat {
@@ -25,39 +26,55 @@
 </head>
 <body>
 
-    <h1>Vis geoposisjon</h1>
+    <h1>Geoposisjon og Vibrasjon</h1>
 
     <button onclick="hentPosisjon()">Geoposisjon</button>
+    <button onclick="vibrer()">Vibrer</button>
 
-    <div id="resultat">Trykk på knappen for å hente posisjonen.</div>
+    <div id="resultat">
+        Trykk på en knapp.
+    </div>
 
     <script>
         function hentPosisjon() {
             const resultat = document.getElementById("resultat");
 
             if (!navigator.geolocation) {
-                resultat.innerHTML = "Geolokasjon støttes ikke av nettleseren.";
+                resultat.textContent =
+                    "Geolokasjon støttes ikke av nettleseren.";
                 return;
             }
 
-            resultat.innerHTML = "Henter posisjon...";
+            resultat.textContent = "Henter posisjon...";
 
             navigator.geolocation.getCurrentPosition(
                 function(posisjon) {
-                    const breddegrad = posisjon.coords.latitude;
-                    const lengdegrad = posisjon.coords.longitude;
-                    const nøyaktighet = posisjon.coords.accuracy;
-
                     resultat.innerHTML = `
-                        <p><strong>Breddegrad:</strong> ${breddegrad}</p>
-                        <p><strong>Lengdegrad:</strong> ${lengdegrad}</p>
-                        <p><strong>Nøyaktighet:</strong> ${nøyaktighet.toFixed(0)} meter</p>
+                        <p><strong>Breddegrad:</strong> ${posisjon.coords.latitude}</p>
+                        <p><strong>Lengdegrad:</strong> ${posisjon.coords.longitude}</p>
+                        <p><strong>Nøyaktighet:</strong> ${Math.round(posisjon.coords.accuracy)} meter</p>
                     `;
                 },
                 function(feil) {
-                    resultat.innerHTML = "Kunne ikke hente posisjon: " + feil.message;
+                    resultat.textContent =
+                        "Kunne ikke hente posisjon: " + feil.message;
                 }
             );
+        }
+
+        function vibrer() {
+            if (!navigator.vibrate) {
+                alert("Vibrasjon støttes ikke av denne nettleseren/enheten.");
+                return;
+            }
+
+            // Lengst mulig vibrasjonsmønster nettleseren tillater.
+            navigator.vibrate([
+                1000, 200,
+                1000, 200,
+                1000, 200,
+                1000
+            ]);
         }
     </script>
 
