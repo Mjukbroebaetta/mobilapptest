@@ -3,80 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geoposisjon og Vibrasjon</title>
+    <title>Geoposisjon med kart</title>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            margin-top: 50px;
+            margin: 20px;
         }
 
         button {
             padding: 12px 24px;
             font-size: 18px;
-            cursor: pointer;
             margin: 10px;
+            cursor: pointer;
+        }
+
+        #kart {
+            width: 100%;
+            height: 500px;
+            margin-top: 20px;
+            border: 1px solid #ccc;
         }
 
         #resultat {
             margin-top: 20px;
-            font-size: 18px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Geoposisjon og Vibrasjon</h1>
+<h1>Geoposisjon med kart</h1>
 
-    <button onclick="hentPosisjon()">Geoposisjon</button>
-    <button onclick="vibrer()">Vibrer</button>
+<button onclick="hentPosisjon()">Geoposisjon</button>
+<button onclick="vibrer()">Vibrer</button>
 
-    <div id="resultat">
-        Trykk på en knapp.
-    </div>
+<div id="resultat">
+    Trykk på «Geoposisjon».
+</div>
 
-    <script>
-        function hentPosisjon() {
-            const resultat = document.getElementById("resultat");
+<div id="kart"></div>
 
-            if (!navigator.geolocation) {
-                resultat.textContent =
-                    "Geolokasjon støttes ikke av nettleseren.";
-                return;
-            }
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-            resultat.textContent = "Henter posisjon...";
+<script>
+let kart = L.map('kart').setView([60.3913, 5.3221], 5);
 
-            navigator.geolocation.getCurrentPosition(
-                function(posisjon) {
-                    resultat.innerHTML = `
-                        <p><strong>Breddegrad:</strong> ${posisjon.coords.latitude}</p>
-                        <p><strong>Lengdegrad:</strong> ${posisjon.coords.longitude}</p>
-                        <p><strong>Nøyaktighet:</strong> ${Math.round(posisjon.coords.accuracy)} meter</p>
-                    `;
-                },
-                function(feil) {
-                    resultat.textContent =
-                        "Kunne ikke hente posisjon: " + feil.message;
-                }
-            );
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+}).addTo(kart);
+
+let markor = null;
+let sirkel = null;
+
+function hentPosisjon() {
+
+    if (!navigator.geolocation) {
+        document.getElementById("resultat").innerHTML =
+            "Geolokasjon støttes ikke.";
+        return;
+    }
+
+    document.getElementById("resultat").innerHTML =
+        "Henter posisjon...";
+
+    navigator.geolocation.getCurrentPosition(function(posisjon) {
+
+        const lat = posisjon.coords.latitude;
+        const lon = posisjon.coords.longitude;
+        const accuracy = posisjon.coords.accuracy;
+
+        document.getElementById("resultat").innerHTML = `
+            <b>Breddegrad:</b> ${lat}<br>
+            <b>Lengdegrad:</b> ${lon}<br>
+            <b>Nøyaktighet:</b> ${Math.round(accuracy)} meter
+        `;
+
+        if (markor) {
+            kart.removeLayer(markor);
         }
 
-        function vibrer() {
-            if (!navigator.vibrate) {
-                alert("Vibrasjon støttes ikke av denne nettleseren/enheten.");
-                return;
-            }
-
-            // Lengst mulig vibrasjonsmønster nettleseren tillater.
-            navigator.vibrate([
-                1000, 200,
-                1000, 200,
-                1000, 200,
-                1000
-            ]);
+        if (sirkel) {
+            kart.removeLayer(sirkel);
         }
-    </script>
+
+        markor = L.marker([lat, lon]).addTo(kart);
+
+        sirkel = L.circle([lat, lon], {
+            radius: accuracy
+        }).addTo(kart);
+
+        kart.fitBounds(sirkel.getBounds());
+
+    }, function(feil) {
+        document.getElementById("resultat").innerHTML =
+            "Feil: " + feil.message;
+    });
+}
+
+function vibrer() {
+
+    if (!navigator.vibrate) {
+        alert("Vibrasjon støttes ikke.");
+        return;
+    }
+
+    navigator.vibrate([
+        1000, 200,
+        1000, 200,
+        1000, 200,
+        1000
+    ]);
+}
+</script>
 
 </body>
 </html>
