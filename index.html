@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geoposisjon med kart</title>
+    <title>Geoposisjon med nærhetssjekk</title>
 
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -31,25 +31,47 @@
 
         #resultat {
             margin-top: 20px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
 
-<h1>Geoposisjon med kart</h1>
+<h1>Geoposisjon med nærhetssjekk</h1>
 
 <button onclick="hentPosisjon()">Geoposisjon</button>
 <button onclick="vibrer()">Vibrer</button>
 
-<div id="resultat">
-    Trykk på «Geoposisjon».
-</div>
+<div id="resultat">Trykk på knappen for å starte.</div>
 
 <div id="kart"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+// Forhåndsdefinerte steder
+const steder = [
+    {
+        navn: "Wiese",
+        lat: 61.113056, 
+        lon: 10.468194,
+        radius: 100
+    },
+    {
+        navn: "Bryggerikjelleren",
+        lat: 61.117222,
+        lon: 10.466361,
+        radius: 100
+    },
+    {
+        navn: "Bocca",
+        lat: 61.117361,
+        lon: 10.465667,
+        radius: 100
+    }
+];
+
+// Kart
 let kart = L.map('kart').setView([60.3913, 5.3221], 5);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -59,15 +81,46 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let markor = null;
 let sirkel = null;
 
+// Avstand i meter (Haversine)
+function avstandMeter(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+}
+
+// Tegn faste steder på kartet
+steder.forEach(sted => {
+    L.marker([sted.lat, sted.lon])
+        .addTo(kart)
+        .bindPopup(sted.navn);
+
+    L.circle([sted.lat, sted.lon], {
+        radius: sted.radius
+    }).addTo(kart);
+});
+
 function hentPosisjon() {
 
     if (!navigator.geolocation) {
-        document.getElementById("resultat").innerHTML =
+        document.getElementById("resultat").textContent =
             "Geolokasjon støttes ikke.";
         return;
     }
 
-    document.getElementById("resultat").innerHTML =
+    document.getElementById("resultat").textContent =
         "Henter posisjon...";
 
     navigator.geolocation.getCurrentPosition(function(posisjon) {
@@ -82,13 +135,8 @@ function hentPosisjon() {
             <b>Nøyaktighet:</b> ${Math.round(accuracy)} meter
         `;
 
-        if (markor) {
-            kart.removeLayer(markor);
-        }
-
-        if (sirkel) {
-            kart.removeLayer(sirkel);
-        }
+        if (markor) kart.removeLayer(markor);
+        if (sirkel) kart.removeLayer(sirkel);
 
         markor = L.marker([lat, lon]).addTo(kart);
 
@@ -98,14 +146,28 @@ function hentPosisjon() {
 
         kart.fitBounds(sirkel.getBounds());
 
+        // SJEKK NÆRHET
+        let treff = [];
+
+        for (const sted of steder) {
+            const avstand = avstandMeter(lat, lon, sted.lat, sted.lon);
+
+            if (avstand <= sted.radius) {
+                treff.push(`${sted.navn} (${Math.round(avstand)} m unna)`);
+            }
+        }
+
+        if (treff.length > 0) {
+            alert("Du er i nærheten av:\n\n" + treff.join("\n"));
+        }
+
     }, function(feil) {
-        document.getElementById("resultat").innerHTML =
+        document.getElementById("resultat").textContent =
             "Feil: " + feil.message;
     });
 }
 
 function vibrer() {
-
     if (!navigator.vibrate) {
         alert("Vibrasjon støttes ikke.");
         return;
